@@ -8,15 +8,15 @@ export default class UsersController {
     const users = dbClient.db.collection('users');
 
     if (!email) {
-      return res.status(400).send('Missing email');
+      return res.status(400).json({ error: 'Missing email' });
     }
 
     if (!password) {
-      return res.status(400).send('Missing password');
+      return res.status(400).json({ error: 'Missing password' });
     }
 
     if (await users.findOne({ email })) {
-      return res.status(400).send('Already exists');
+      return res.status(400).json({ error: 'Already exist' });
     }
 
     const hash = createHash('sha1');
