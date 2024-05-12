@@ -26,7 +26,7 @@ export default class UsersController {
     const doc = { email, password: hashedPassword };
     users.insertOne(doc);
 
-    const user = await users.findOne({ email }, { projections: { _id: 1, email: 1, password: 0 } });
+    const user = await users.findOne({ email }, { projection: { _id: 1, email: 1 } });
 
     return res.status(201).json(user);
   }
