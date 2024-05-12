@@ -1,5 +1,5 @@
-const hey = (async () => {
-    return 4
-})();
+import redisClient from './utils/redis';
+import dbClient from './utils/db';
 
-console.log(hey)
+console.log(dbClient.nbUsers())
+console.log(dbClient.nbFiles())
