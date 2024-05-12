@@ -17,7 +17,6 @@ class DBClient {
   }
 
   isAlive() {
-    console.log(this.client.topology.isConnected);
     return !!this.client && !!this.client.topology && this.client.topology.isConnected();
   }
 
