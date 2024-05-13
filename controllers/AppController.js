@@ -9,7 +9,6 @@ export default class AppController {
 
   static async getStats(req, res) {
     const count = { users: await dbClient.nbUsers(), files: await dbClient.nbFiles() };
-    console.log(count);
     return res.json(count);
   }
 }
