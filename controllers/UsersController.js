@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
-export default class UsersController {
+export class UsersController {
   static async postNew(req, res) {
     const { email } = req.body;
     const { password } = req.body;
@@ -33,7 +33,9 @@ export default class UsersController {
 
     return res.status(201).json(user);
   }
+}
 
+export class UserController {
   static async getMe(req, res) {
     const token = req.headers['x-token'];
 

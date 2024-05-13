@@ -1,6 +1,6 @@
 import express from 'express';
 import AppController from '../controllers/AppController';
-import UsersController from '../controllers/UsersController';
+import { UsersController, UserController } from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController';
 
 const router = express.Router();
@@ -26,7 +26,7 @@ router.get('/disconnect', (req, res) => {
 });
 
 router.get('/users/me', (req, res) => {
-  UsersController.getMe(req, res);
+  UserController.getMe(req, res);
 });
 
 export default router;
