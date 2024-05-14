@@ -38,10 +38,9 @@ export default class FilesController {
     }
 
     const filesCollection = dbClient.db.collection('files');
-    let parentFolder = null
-    if (parentId !== '0')
-    {
-        parentFolder = await filesCollection.findOne({ _id: ObjectId(parentId) });
+    let parentFolder = null;
+    if (parentId !== '0') {
+      parentFolder = await filesCollection.findOne({ _id: ObjectId(parentId) });
     }
 
     if (parentId !== '0' && !parentFolder) {
@@ -52,9 +51,9 @@ export default class FilesController {
       return res.status(400).json({ error: 'Parent is not a folder' });
     }
 
-    let parentObjectId = '0'
-    if (parentId !== '0'){
-        parentObjectId = ObjectId(parentId)
+    let parentObjectId = '0';
+    if (parentId !== '0') {
+      parentObjectId = ObjectId(parentId);
     }
     const fileDocumentTemplate = {
       userId: ObjectId(authorizedUserId), name, type, parentId: parentObjectId, isPublic,
