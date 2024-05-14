@@ -26,7 +26,7 @@ export class UsersController {
     const hashedPassword = hash.digest('hex');
 
     const doc = { email, password: hashedPassword };
-    users.insertOne(doc);
+    await users.insertOne(doc);
 
     const userObject = await users.findOne({ email }, { projection: { _id: 1, email: 1 } });
     const user = { id: userObject._id, email: userObject.email };
@@ -51,8 +51,9 @@ export class UserController {
 
     const usersCollection = dbClient.db.collection('users');
 
-    const user = await usersCollection.findOne({ _id: ObjectId(authorizedUserId) },
+    const userObject = await usersCollection.findOne({ _id: ObjectId(authorizedUserId) },
       { projection: { _id: 1, email: 1 } });
+      const user = { id: userObject._id, email: userObject.email };
     return res.json(user);
   }
 }
