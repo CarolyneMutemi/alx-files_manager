@@ -53,7 +53,7 @@ export class UserController {
 
     const userObject = await usersCollection.findOne({ _id: ObjectId(authorizedUserId) },
       { projection: { _id: 1, email: 1 } });
-    const user = { id: userObject._id, email: userObject.email };
+    const user = { id: userObject._id.toString(), email: userObject.email };
     return res.json(user);
   }
 }
