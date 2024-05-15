@@ -2,18 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
-import imageThumbnail from 'image-thumbnail';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
-
-async function createThumbnail(base64Data, outputPath) {
-  try {
-    const thumbnail = await imageThumbnail(base64Data, { responseType: 'buffer' });
-    fs.writeFileSync(outputPath, thumbnail);
-  } catch (error) {
-    console.error(error);
-  }
-}
 
 export default class FilesController {
   static async postUpload(req, res) {
@@ -84,17 +74,10 @@ export default class FilesController {
     }
 
     const fileUUID = uuidv4();
+    const plainTextData = Buffer.from(data, 'base64').toString();
     const localPath = path.join(folderPath, fileUUID);
 
-    if (type === 'image') {
-      await createThumbnail(data, localPath);
-    }
-
-    if (type === 'file') {
-      const plainTextData = Buffer.from(data, 'base64').toString();
-      fs.writeFileSync(localPath, plainTextData);
-    }
-
+    fs.writeFileSync(localPath, plainTextData);
     const fileDocument = { ...fileDocumentTemplate, localPath };
     await filesCollection.insertOne(fileDocument);
     const savedFileDocument = await filesCollection.findOne(fileDocument);
@@ -103,20 +86,4 @@ export default class FilesController {
     delete savedFileDocument.localPath;
     return res.status(201).json(savedFileDocument);
   }
-
-  // static async getShow(req, res) {
-  //  const token = req.headers['x-token'];
-//
-  //  if (!token) {
-  //    return res.status(401).json({ error: 'Unauthorized' });
-  //  }
-//
-  //  const authorizedUserId = await redisClient.get(`auth_${token}`);
-//
-  //  if (!authorizedUserId) {
-  //    return res.status(401).json({ error: 'Unauthorized' });
-  //  }
-//
-  //  const { id } = req.params;
-  // }
 }
