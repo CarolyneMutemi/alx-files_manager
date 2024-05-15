@@ -181,4 +181,82 @@ export default class FilesController {
 
     return res.json(filesList);
   }
+
+  static async putPublish(req, res) {
+    const token = req.headers['x-token'];
+
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const authorizedUserId = await redisClient.get(`auth_${token}`);
+    if (!authorizedUserId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { id } = req.params;
+    const filesCollection = dbClient.db.collection('files');
+
+    let file = null;
+    try {
+      file = await filesCollection.findOne(
+        { userId: ObjectId(authorizedUserId), _id: ObjectId(id) },
+      );
+    } catch (err) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (!file) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    await filesCollection.updateOne(file, { $set: { isPublic: true } });
+    const updatedFile = await filesCollection.findOne(
+      { userId: ObjectId(authorizedUserId), _id: ObjectId(id) },
+    );
+
+    updatedFile.id = updatedFile._id;
+    delete updatedFile._id;
+
+    return res.json(updatedFile);
+  }
+
+  static async putUnpublish(req, res) {
+    const token = req.headers['x-token'];
+
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const authorizedUserId = await redisClient.get(`auth_${token}`);
+    if (!authorizedUserId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { id } = req.params;
+    const filesCollection = dbClient.db.collection('files');
+
+    let file = null;
+    try {
+      file = await filesCollection.findOne(
+        { userId: ObjectId(authorizedUserId), _id: ObjectId(id) },
+      );
+    } catch (err) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (!file) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    await filesCollection.updateOne(file, { $set: { isPublic: false } });
+    const updatedFile = await filesCollection.findOne(
+      { userId: ObjectId(authorizedUserId), _id: ObjectId(id) },
+    );
+
+    updatedFile.id = updatedFile._id;
+    delete updatedFile._id;
+
+    return res.json(updatedFile);
+  }
 }
