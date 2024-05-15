@@ -2,8 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
+import imageThumbnail from 'image-thumbnail';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
+
+async function createThumbnail(base64Data, outputPath) {
+  try {
+    const thumbnail = await imageThumbnail(base64Data, { responseType: 'buffer' });
+    fs.writeFileSync(outputPath, thumbnail);
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 export default class FilesController {
   static async postUpload(req, res) {
@@ -39,9 +49,17 @@ export default class FilesController {
 
     const filesCollection = dbClient.db.collection('files');
     let parentFolder = null;
+
+    let parentObjectId = '0';
     if (parentId !== '0') {
-      parentFolder = await filesCollection.findOne({ _id: ObjectId(parentId) });
+      try {
+      parentObjectId = ObjectId(parentId);
+      }catch (err) {
+        return res.status(400).json({ error: 'Parent not found' })
+      }
     }
+
+    parentFolder = await filesCollection.findOne({ _id: parentObjectId });
 
     if (parentId !== '0' && !parentFolder) {
       return res.status(400).json({ error: 'Parent not found' });
@@ -51,10 +69,6 @@ export default class FilesController {
       return res.status(400).json({ error: 'Parent is not a folder' });
     }
 
-    let parentObjectId = '0';
-    if (parentId !== '0') {
-      parentObjectId = ObjectId(parentId);
-    }
     const fileDocumentTemplate = {
       userId: ObjectId(authorizedUserId), name, type, parentId: parentObjectId, isPublic,
     };
@@ -74,10 +88,17 @@ export default class FilesController {
     }
 
     const fileUUID = uuidv4();
-    const plainTextData = Buffer.from(data, 'base64').toString();
     const localPath = path.join(folderPath, fileUUID);
 
-    fs.writeFileSync(localPath, plainTextData);
+    if (type === 'image') {
+      await createThumbnail(data, localPath);
+    }
+
+    if (type === 'file') {
+      const plainTextData = Buffer.from(data, 'base64').toString();
+      fs.writeFileSync(localPath, plainTextData);
+    }
+
     const fileDocument = { ...fileDocumentTemplate, localPath };
     await filesCollection.insertOne(fileDocument);
     const savedFileDocument = await filesCollection.findOne(fileDocument);
@@ -85,5 +106,77 @@ export default class FilesController {
     delete savedFileDocument._id;
     delete savedFileDocument.localPath;
     return res.status(201).json(savedFileDocument);
+  }
+
+  static async getShow(req, res) {
+   const token = req.headers['x-token'];
+
+   if (!token) {
+     return res.status(401).json({ error: 'Unauthorized' });
+   }
+
+   const authorizedUserId = await redisClient.get(`auth_${token}`);
+   if (!authorizedUserId) {
+     return res.status(401).json({ error: 'Unauthorized' });
+   }
+
+   const { id } = req.params;
+   const filesCollection = dbClient.db.collection('files');
+
+   let file = null
+   try {
+   file = await filesCollection.findOne({'userId': ObjectId(authorizedUserId), '_id': ObjectId(id)})
+   } catch (err) {
+    return res.status(404).json({'error': 'Not found'})
+   }
+
+   if (!file) {
+    return res.status(404).json({'error': 'Not found'})
+   }
+
+   return res.json(file)
+  }
+
+  static async getIndex(req, res){
+    const token = req.headers['x-token'];
+
+   if (!token) {
+     return res.status(401).json({ error: 'Unauthorized' });
+   }
+
+   const authorizedUserId = await redisClient.get(`auth_${token}`);
+   if (!authorizedUserId) {
+     return res.status(401).json({ error: 'Unauthorized' });
+   }
+
+   const parentId = req.query.parentId || '0'
+   const page = req.query.page || 0
+
+   const filesCollection = dbClient.db.collection('files');
+
+   let cursor;
+
+  if (parentId === '0')
+  {
+    cursor = filesCollection.find().skip(page * 20).limit(20)
+  }
+  else {
+    try {
+    cursor = filesCollection.find({'parentId': ObjectId(parentId), userId: ObjectId(authorizedUserId)}).skip(page * 20).limit(20)
+    }
+    catch (err) {
+      return res.json([])
+    }
+  }
+
+   const filesList = []
+
+   for await (const file of cursor) {
+    file.id = file._id
+    delete file._id
+    filesList.push(file)
+   }
+
+   return res.json(filesList)
   }
 }
