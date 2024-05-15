@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
-export default class UsersController {
+export class UsersController {
   static async postNew(req, res) {
     const { email } = req.body;
     const { password } = req.body;
@@ -32,27 +32,6 @@ export default class UsersController {
     const user = { id: userObject._id, email: userObject.email };
 
     return res.status(201).json(user);
-  }
-
-  static async getMe(req, res) {
-    const token = req.headers['x-token'];
-
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const authorizedUserId = await redisClient.get(`auth_${token}`);
-
-    if (!authorizedUserId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const usersCollection = dbClient.db.collection('users');
-
-    const userObject = await usersCollection.findOne({ _id: ObjectId(authorizedUserId) },
-      { projection: { _id: 1, email: 1 } });
-    const user = { id: userObject._id, email: userObject.email };
-    return res.json(user);
   }
 }
 

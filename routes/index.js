@@ -1,6 +1,6 @@
 import express from 'express';
 import AppController from '../controllers/AppController';
-import UsersController, { UserController } from '../controllers/UsersController';
+import { UsersController, UserController } from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController';
 import FilesController from '../controllers/FilesController';
 
@@ -27,7 +27,7 @@ router.get('/disconnect', (req, res) => {
 });
 
 router.get('/users/me', (req, res) => {
-  UsersController.getMe(req, res);
+  UserController.getMe(req, res);
 });
 
 router.post('/files', (req, res) => {
