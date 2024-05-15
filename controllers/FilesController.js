@@ -53,9 +53,9 @@ export default class FilesController {
     let parentObjectId = '0';
     if (parentId !== '0') {
       try {
-      parentObjectId = ObjectId(parentId);
-      }catch (err) {
-        return res.status(400).json({ error: 'Parent not found' })
+        parentObjectId = ObjectId(parentId);
+      } catch (err) {
+        return res.status(400).json({ error: 'Parent not found' });
       }
     }
 
@@ -109,74 +109,76 @@ export default class FilesController {
   }
 
   static async getShow(req, res) {
-   const token = req.headers['x-token'];
-
-   if (!token) {
-     return res.status(401).json({ error: 'Unauthorized' });
-   }
-
-   const authorizedUserId = await redisClient.get(`auth_${token}`);
-   if (!authorizedUserId) {
-     return res.status(401).json({ error: 'Unauthorized' });
-   }
-
-   const { id } = req.params;
-   const filesCollection = dbClient.db.collection('files');
-
-   let file = null
-   try {
-   file = await filesCollection.findOne({'userId': ObjectId(authorizedUserId), '_id': ObjectId(id)})
-   } catch (err) {
-    return res.status(404).json({'error': 'Not found'})
-   }
-
-   if (!file) {
-    return res.status(404).json({'error': 'Not found'})
-   }
-
-   return res.json(file)
-  }
-
-  static async getIndex(req, res){
     const token = req.headers['x-token'];
 
-   if (!token) {
-     return res.status(401).json({ error: 'Unauthorized' });
-   }
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-   const authorizedUserId = await redisClient.get(`auth_${token}`);
-   if (!authorizedUserId) {
-     return res.status(401).json({ error: 'Unauthorized' });
-   }
+    const authorizedUserId = await redisClient.get(`auth_${token}`);
+    if (!authorizedUserId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-   const parentId = req.query.parentId || '0'
-   const page = req.query.page || 0
+    const { id } = req.params;
+    const filesCollection = dbClient.db.collection('files');
 
-   const filesCollection = dbClient.db.collection('files');
-
-   let cursor;
-
-  if (parentId === '0')
-  {
-    cursor = filesCollection.find().skip(page * 20).limit(20)
-  }
-  else {
+    let file = null;
     try {
-    cursor = filesCollection.find({'parentId': ObjectId(parentId), userId: ObjectId(authorizedUserId)}).skip(page * 20).limit(20)
+      file = await filesCollection.findOne(
+        { userId: ObjectId(authorizedUserId), _id: ObjectId(id) },
+      );
+    } catch (err) {
+      return res.status(404).json({ error: 'Not found' });
     }
-    catch (err) {
-      return res.json([])
+
+    if (!file) {
+      return res.status(404).json({ error: 'Not found' });
     }
+
+    return res.json(file);
   }
 
-   const filesList = []
+  static async getIndex(req, res) {
+    const token = req.headers['x-token'];
 
-   for await (const file of cursor) {
-    file.id = file._id
-    delete file._id
-    filesList.push(file)
-   }
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-   return res.json(filesList)
+    const authorizedUserId = await redisClient.get(`auth_${token}`);
+    if (!authorizedUserId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const parentId = req.query.parentId || '0';
+    const page = req.query.page || 0;
+
+    const filesCollection = dbClient.db.collection('files');
+
+    let cursor;
+
+    if (parentId === '0') {
+      cursor = filesCollection.find().skip(page * 20).limit(20);
+    } else {
+      try {
+        cursor = filesCollection.find({
+          parentId: ObjectId(parentId),
+          userId: ObjectId(authorizedUserId),
+        }).skip(page * 20).limit(20);
+      } catch (err) {
+        return res.json([]);
+      }
+    }
+
+    const filesList = [];
+
+    for await (const file of cursor) {
+      file.id = file._id;
+      delete file._id;
+      filesList.push(file);
+    }
+
+    return res.json(filesList);
   }
 }
