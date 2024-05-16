@@ -7,8 +7,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import imageThumbnail from 'image-thumbnail';
 import mime from 'mime-types';
+import Queue from 'bull';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
+
+export const fileQueue = new Queue('fileQueue');
 
 async function createThumbnail(base64Data, outputPath) {
   try {
@@ -109,6 +112,10 @@ export default class FilesController {
     savedFileDocument.id = savedFileDocument._id;
     delete savedFileDocument._id;
     delete savedFileDocument.localPath;
+
+    if (type === 'image') {
+      await fileQueue.add({ userId: savedFileDocument.userId, fileId: savedFileDocument.id });
+    }
     return res.status(201).json(savedFileDocument);
   }
 
@@ -266,6 +273,7 @@ export default class FilesController {
 
   static async getFile(req, res) {
     const token = req.headers['x-token'];
+    const imageWidth = req.query.size;
 
     const { id } = req.params;
     const filesCollection = dbClient.db.collection('files');
@@ -294,8 +302,12 @@ export default class FilesController {
     }
 
     let data;
+    const sizeArray = ['500', '200', '100'];
     try {
       data = fs.readFileSync(file.localPath);
+      if (sizeArray.includes(imageWidth) && file.type === 'image') {
+        data = fs.readFileSync(`${file.localPath}_${imageWidth}`);
+      }
     } catch (error) {
       return res.status(404).json({ error: 'Not found' });
     }

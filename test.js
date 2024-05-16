@@ -24,37 +24,34 @@ import dbClient from './utils/db';
 // console.log(hey == undefined)
 
 const fs = require('fs');
-//const imageThumbnail = require('image-thumbnail');
-//
-//async function createThumbnail(inputPath, outputPath) {
-//    try {
-//        const options = { width: 100, height: 100, responseType: 'buffer' };
-//        
-//        const thumbnail = await imageThumbnail(inputPath, options);
-//        fs.writeFileSync(outputPath, thumbnail);
-//        
-//        console.log('Thumbnail created successfully!');
-//    } catch (err) {
-//        console.error('Error creating thumbnail:', err);
-//    }
-//}
-//
-//// Example usage
-//const inputPath = 'path/to/your/image.jpg';
-//const outputPath = 'path/to/save/thumbnail.jpg';
-//
-//createThumbnail('image.jpg', 'image2.jpg');
-
-
 const imageThumbnail = require('image-thumbnail');
 
-(async () => {try {
-    const imageBuffer = fs.readFileSync('image.jpg');
-    console.log(imageBuffer)
+async function createThumbnail(inputPath, outputPath) {
+    try {
+        const options = { width: 500, responseType: 'buffer' };
+        
+        const thumbnail = await imageThumbnail(inputPath, options);
+        fs.writeFileSync(outputPath, thumbnail);
+        
+        console.log('Thumbnail created successfully!');
+    } catch (err) {
+        console.error('Error creating thumbnail:', err);
+    }
+}
 
-    const thumbnail = await imageThumbnail(imageBuffer);
-    console.log(thumbnail);
-} catch (err) {
-    console.error(err);
-}})();
+// Example usage
+const inputPath = 'path/to/your/image.jpg';
+const outputPath = 'path/to/save/thumbnail.jpg';
 
+createThumbnail('image.jpg', 'image2.jpg');
+//const imageThumbnail = require('image-thumbnail');
+//
+//(async () => {try {
+//    const imageBuffer = fs.readFileSync('image.jpg');
+//    console.log(imageBuffer)
+//
+//    const thumbnail = await imageThumbnail(imageBuffer);
+//    console.log(thumbnail);
+//} catch (err) {
+//    console.error(err);
+//}})();
