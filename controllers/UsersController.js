@@ -1,7 +1,10 @@
 import { createHash } from 'crypto';
 import { ObjectId } from 'mongodb';
+import Queue from 'bull';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
+
+export const userQueue = new Queue('userQueue');
 
 export class UsersController {
   static async postNew(req, res) {
@@ -30,6 +33,8 @@ export class UsersController {
 
     const userObject = await users.findOne({ email }, { projection: { _id: 1, email: 1 } });
     const user = { id: userObject._id, email: userObject.email };
+
+    await userQueue.add({ userId: user.id.toString() });
 
     return res.status(201).json(user);
   }

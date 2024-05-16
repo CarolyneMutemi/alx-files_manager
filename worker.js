@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import imageThumbnail from 'image-thumbnail';
 import fs from 'fs';
 import { fileQueue } from './controllers/FilesController';
+import { userQueue } from './controllers/UsersController';
 import dbClient from './utils/db';
 
 async function createThumbnail(originalFilePath) {
@@ -44,5 +45,33 @@ fileQueue.on('completed', () => {
 });
 
 fileQueue.on('failed', (job, err) => {
+  console.log('failed', err);
+});
+
+userQueue.process(async (job) => {
+  const { userId } = job.data;
+
+  if (!userId) {
+    return Promise.reject(new Error('Missing userId'));
+  }
+
+  const usersCollection = dbClient.db.collection('users');
+
+  let user;
+  try {
+    user = await usersCollection.findOne({ _id: ObjectId(userId) });
+    console.log('Welcome', user.email);
+  } catch (error) {
+    return Promise.reject(new Error('User not found'));
+  }
+
+  return Promise.resolve();
+});
+
+userQueue.on('completed', () => {
+  console.log('complete');
+});
+
+userQueue.on('failed', (job, err) => {
   console.log('failed', err);
 });
